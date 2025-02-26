@@ -8,8 +8,6 @@ void setup() {
 
     /* initialize mpu6050 in interrupt mode */
 
-
-
 }
 
 
@@ -17,6 +15,6 @@ void loop() {
 
     /* mpu 6050 */
 
-    
+
 
 }
