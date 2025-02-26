@@ -13,6 +13,8 @@ char angles_buffer[20];
 
 MPU6050 imu(MPU_ADDRESS, MPU_ACCEL_RANGE, GYRO_RANGE); 
 float pitch, roll;
+float currentSampleMillis = 0;
+float lastSampleMillis = 0;
 
 void setup() {
     Serial.begin(SERIAL_BAUDRATE);
@@ -36,11 +38,22 @@ void loop() {
     // float ax = imu.readXAcceleration();
     // float ay = imu.readYAcceleration();
     // float az = imu.readZAcceleration();
+
+    // get sample time for the IMU data 
+    //unsigned long sample_micros = (lastSampleMicros > 0) ? micros() - lastSampleMicros : 0;
+    lastSampleMillis = millis();
+    float time = millis();
+    currentSampleMillis = (time- lastSampleMillis);
+
     roll = imu.getRoll();
     pitch = imu.getPitch();
 
+    // filtered angles 
+    float f_pitch = imu.filterPitch(currentSampleMillis);
+    float f_roll = imu.filterRoll(currentSampleMillis);
+
     // sprintf(acc_buffer, "%.2f,%.2f,%.2f\r\n",ax,ay,az);
-    sprintf(angles_buffer, "%.2f,%.2f\n", roll, pitch);
+    sprintf(angles_buffer, "%.2f,%.2f,%.2f,%.2f\n", roll, pitch, f_pitch, f_roll);
 
     Serial.print(acc_buffer);
     Serial.println(angles_buffer);

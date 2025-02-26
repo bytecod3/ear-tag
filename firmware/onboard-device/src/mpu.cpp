@@ -247,18 +247,31 @@ float MPU6050::readZAngularVelocity() {
     return this->ang_vel_z_real;
 }
 
+/**
+ * @brief compute the magnitude of acceleration of the module
+ */
+float MPU6050::computeAccelerationMagnitude() {
+    float xa = this->readXAcceleration();
+    float ya = this->readYAcceleration();
+    float za = this->readZAcceleration();
 
+    float mag = sqrt(pow(xa,2) + pow(ya,2) + pow(za,2));
+    return mag;
+}
 
 /**
  * perform sensor fusion
  * perfom complementary filter to remove accelerometer high frequrecny noise 
  * remove low frequency noise from gyroscope and fuse the sensors 
 */
-void MPU6050::filterImu() {
-    // complementary filter formula 
-    // return this value as the final correct value from the IMU
-    
+float MPU6050::filterPitch(unsigned long sample_time) {
+    this->filtered_pitch = ALPHA * (this->pitch_angle + this->readXAngularVelocity() * sample_time/USEC_TO_SEC_FACTOR) *  (1-ALPHA)*this->readXAcceleration();  
+    return this->filtered_pitch;
+}
 
+float MPU6050::filterRoll(unsigned long sample_time) {
+    this->filtered_roll = ALPHA * (this->roll_angle + this->readYAngularVelocity() * sample_time/USEC_TO_SEC_FACTOR) *  (1-ALPHA)*this->readYAcceleration();  
+    return this->filtered_roll;
 }
 
 // float MPU6050::readTemperature() {

@@ -41,7 +41,18 @@ roll = 180 * atan2(accelY,sqrt(accelX*accelX + accelZ*accelZ))/PI
 ### Filtering and correcting MPU6050 data for accuracy 
 After obtaining MPU6050 accelerometer and gyroscope readings, addressing sensor drift, noise, and measurement errors is essential for accurate motion tracking and orientation estimation. [1]
 
+Animal exhibit distinct diurnal patterns depending on the time of day[2]. This means that in the morning and evening they show high activity but during nightime they are ruminating and therefore low activiy.  To detect the shocks, a High pass filter(HPF) is used to discard all data/noise below a given cutoff frequency. 
 
+This ear tag uses a simple complemetary filter to do the data cleanup. 
+The formula is shown below: 
+
+```c
+
+
+```
+
+## Shock detection 
+In case the animal falls, we can use the MPU6050 to detect the shock and apply corrective measures. The accelerometer used is configured to measure up to (+/-)16g range.
 
 ### Resultant acceleration calculation 
 To be able to register sudden animal activity, we have to keep track of the resultant acceleration. 
@@ -58,3 +69,6 @@ To open the flowcharts and diagrams, download draw.io app here -> https://github
 Choose the WindowsInstaller version
 
 
+### References
+[1] 
+[2] [text](https://www.mdpi.com/2076-2615/14/2/301)

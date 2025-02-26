@@ -48,6 +48,8 @@
 #define TEMP_OUT_L              0x42
 #define ONE_G                   9.80665
 #define TO_DEG_FACTOR           57.32
+#define ALPHA                   0.98
+#define USEC_TO_SEC_FACTOR      1000
 
 class MPU6050 {
     private:
@@ -61,6 +63,8 @@ class MPU6050 {
         float acc_x_real, acc_y_real, acc_z_real; // converted acceleration values
         int16_t ang_vel_x, ang_vel_y, ang_vel_z;
         float ang_vel_x_real, ang_vel_y_real, ang_vel_z_real; // converted angular velocity values
+        float filtered_pitch;
+        float filtered_roll;
         int16_t temp;
         float temp_real;
 
@@ -81,6 +85,8 @@ class MPU6050 {
         float getPitch();
         float getYaw();
         float computeAccelerationMagnitude();
+        float filterPitch(unsigned long);
+        float filterRoll(unsigned long);
 };
 
 #endif

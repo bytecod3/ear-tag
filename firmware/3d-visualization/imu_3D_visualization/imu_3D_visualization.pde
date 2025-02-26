@@ -1,6 +1,6 @@
 /**
-This cprogram visualizes the orientation data received from IMU onboard the 
-flight computer 
+This cprogram visualizes the orientation data received from IMU 
+onboard the flight computer 
 **/
 
 import processing.serial.*;
@@ -34,7 +34,7 @@ void draw() {
   box(386, 40, 200);
   textSize(25);
   fill(255, 255, 0);
-  text("TAG FRONT[1.0]", -183, 10, 101);
+  text("TAG BACK[1.0]", -183, 10, 101);
      
 }
 
