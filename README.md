@@ -12,7 +12,23 @@ to tell whether the animal fell, is still lying down etc.
 The device reads accelerations from an accelerometer sensor and does data processing to translate them into useful data like shock and activity levels.
 Using a GPS, we can monitor the real-time location of the animal. 
 
-This data is transmitted to a base station via a LORA gateway and visualized on the farmer's device, either phone and/or desktop setup.
+This data is transmitted to a base station via a LORA gateway and visualized on the farmer's device, either 
+phone and/or desktop setup.
+
+### Pitch and roll calculation 
+Acceleration is read from all axes(x, y, z). The read values are then used 
+to calculate the pitch and roll angles as shown below.  
+#### Pitch calculation
+```c
+pitch = arcsine(x_acceleration_in_ms)
+```
+#### Roll calculation 
+```c
+roll = atan2(y_aceleration_in_ms, z_acceleration_in_ms)
+```
+
+### Resultant acceleration calculation 
+
 
 ## Schematics 
 
