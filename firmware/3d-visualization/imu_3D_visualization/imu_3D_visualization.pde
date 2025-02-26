@@ -35,8 +35,7 @@ void draw() {
   textSize(25);
   fill(255, 255, 0);
   text("TAG FRONT[1.0]", -183, 10, 101);
-  
-    
+     
 }
 
 // read data from the serial port

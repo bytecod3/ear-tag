@@ -146,13 +146,15 @@ float MPU6050::readZAcceleration() {
 */
 float MPU6050::getRoll() {
     // convert the imu readings to m/s^2
+    this->acc_x_ms = this->readXAcceleration() * ONE_G;
     this->acc_y_ms = this->readYAcceleration() * ONE_G;
     this->acc_z_ms = this->readZAcceleration() * ONE_G;
 
-    this->roll_angle = atan2(this->acc_y_ms, this->acc_z_ms);
+    // this->roll_angle = atan2(this->acc_y_ms, this->acc_z_ms);
+
+    this->roll_angle = atan2(this->acc_y_ms, sqrt(this->acc_x_ms*this->acc_x_ms + this->acc_z_ms*this->acc_z_ms));
 
     return this->roll_angle * TO_DEG_FACTOR;    
-
 }
 
 /**
@@ -164,13 +166,17 @@ float MPU6050::getPitch() {
 
     // convert the imu readings to m/s^2
     this->acc_x_ms = this->readXAcceleration() * ONE_G;
+    this->acc_y_ms = this->readYAcceleration() * ONE_G;
+    this->acc_z_ms = this->readZAcceleration() * ONE_G;    
 
-    double u = this->acc_x_ms / ONE_G;
+    this->pitch_angle = atan2(this->acc_x_ms, sqrt(this->acc_y_ms*this->acc_y_ms + this->acc_z_ms*this->acc_z_ms));
 
-    // clip to [-1, +1] bound before passing to arcsine
-    if( ! ( (u > 1) || (u < -1) )) {
-        this->pitch_angle = asin(this->acc_x_ms/ONE_G);
-    }
+    // double u = this->acc_x_ms / ONE_G;
+
+    // // clip to [-1, +1] bound before passing to arcsine
+    // if( ! ( (u > 1) || (u < -1) )) {
+    //     this->pitch_angle = asin(this->acc_x_ms/ONE_G);
+    // }
 
     return this->pitch_angle * TO_DEG_FACTOR;
 }
