@@ -265,7 +265,13 @@ float MPU6050::computeAccelerationMagnitude() {
  * remove low frequency noise from gyroscope and fuse the sensors 
 */
 float MPU6050::filterPitch(unsigned long sample_time) {
-    this->filtered_pitch = ALPHA * (this->pitch_angle + this->readXAngularVelocity() * sample_time/USEC_TO_SEC_FACTOR) *  (1-ALPHA)*this->readXAcceleration();  
+
+    // this->filtered_pitch = ALPHA * (this->getPitch() + this->readXAngularVelocity() * sample_time/USEC_TO_SEC_FACTOR) *  (1-ALPHA)*this->readXAcceleration();  
+    // // float angle;
+    // // angle = ALPHA*(angle +)
+
+    // sample time is in seconds 
+    this->filtered_pitch = ALPHA * (this->filtered_pitch + this->readXAngularVelocity() * sample_time/1000) + (1-ALPHA)*this->readXAcceleration();
     return this->filtered_pitch;
 }
 

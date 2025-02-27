@@ -47,9 +47,15 @@ This ear tag uses a simple complemetary filter to do the data cleanup.
 The formula is shown below: 
 
 ```c
-
+angle = alpha * (accelerometer_value + gyroscope_value * dt) + (1 - alpha)* accelerometer_value
 
 ```
+
+The graph shows the results obtained from applying this complementary filter:
+
+![alt text](imgs/complementary-filter.jpg)
+
+The red line shows the filtered pitch angle while the blue line shows the raw pitch angle.
 
 ## Shock detection 
 In case the animal falls, we can use the MPU6050 to detect the shock and apply corrective measures. The accelerometer used is configured to measure up to (+/-)16g range.
