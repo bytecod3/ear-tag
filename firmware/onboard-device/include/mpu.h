@@ -50,6 +50,7 @@
 #define TO_DEG_FACTOR           57.32
 #define ALPHA                   0.98
 #define USEC_TO_SEC_FACTOR      1000
+#define FILTER_BUFFER_SIZE      5
 
 class MPU6050 {
     private:
@@ -67,6 +68,8 @@ class MPU6050 {
         float filtered_roll;
         int16_t temp;
         float temp_real;
+        float values[FILTER_BUFFER_SIZE];
+        uint8_t mov_avg_index;
 
         float pitch_angle, roll_angle;
         float acc_x_ms, acc_y_ms, acc_z_ms; // acceleration in m/s^2
@@ -85,8 +88,10 @@ class MPU6050 {
         float getPitch();
         float getYaw();
         float computeAccelerationMagnitude();
+        float computeRawAccelerationMagnitude();
         float filterPitch(unsigned long);
         float filterRoll(unsigned long);
+        float movingAverageFilter(float);
 };
 
 #endif

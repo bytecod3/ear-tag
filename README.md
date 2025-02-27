@@ -43,7 +43,8 @@ After obtaining MPU6050 accelerometer and gyroscope readings, addressing sensor 
 
 Animal exhibit distinct diurnal patterns depending on the time of day[2]. This means that in the morning and evening they show high activity but during nightime they are ruminating and therefore low activiy.  To detect the shocks, a High pass filter(HPF) is used to discard all data/noise below a given cutoff frequency. 
 
-This ear tag uses a simple complemetary filter to do the data cleanup. 
+#### Complementary filter
+This ear tag uses a simple complemetary filter to do the data cleanup especially when calulating the pitch and roll angles. 
 The formula is shown below: 
 
 ```c
@@ -57,11 +58,44 @@ The graph shows the results obtained from applying this complementary filter:
 
 The red line shows the filtered pitch angle while the blue line shows the raw pitch angle.
 
+#### Moving average filter
+The moving average filter is used to smooth out acceleration values to remove high frequency noise. It averages the last N values and returns a cleaner value. This filter is used when we do not have big memory constraints and at the same time we need to implement basic filtering. 
+
+```
+/* pseudo code */
+
+create a buffer  
+read sensor  
+store the previous N values 
+calculate the average of the values 
+return the average 
+```
+
+The acceleration values are prone to high frequency noise therefore the average filter was applied to them. The image below shows the result of filtering the x acceration:
+
+![alt text](imgs/moving-average-filter.jpg)
+
+The blue line shows the raw unfiltered value. Red line shows the filterd value. As it can be seen, the moving average filter works as expected, removing high frequency noise from the acceleration value.
+
 ## Shock detection 
 In case the animal falls, we can use the MPU6050 to detect the shock and apply corrective measures. The accelerometer used is configured to measure up to (+/-)16g range.
 
 ### Resultant acceleration calculation 
-To be able to register sudden animal activity, we have to keep track of the resultant acceleration. 
+To be able to register sudden animal activity, we have to keep track of the resultant acceleration, also called the magnitude of acceleration. The graph below shows the valeus of the raw magnitude of acceleration(using raw unfiltered values):
+
+![alt text](imgs/raw-magnitude-of-acceleration.jpg)
+
+The sharp spikes show the acceleration when the device is dropped from about 40 cm high. It can clearly be seen that the magnitude of acceleration is high when this occurs.  
+
+This next figure shows the resultant acceleration using raw and filtered acceleration values, combined into a single plot.
+
+![alt text](imgs/raw-filtered-acceleration.jpg)
+
+The red line shows the cleaner values obtained from the accelerometer.
+
+By monitoring the value of this acceleration, we can be able to set a threshold that we then check to determine if there is a sudden upsurge of activity.
+
+
 
 ## Schematics 
 

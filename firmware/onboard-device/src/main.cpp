@@ -4,61 +4,68 @@
 
 unsigned long now=0;
 unsigned long previous = 0;
-unsigned long interval = 500;
-bool led_state = 0;
+int interval = 500;
+bool led_state = LOW;
 
 char acc_buffer[20];
-char angles_buffer[20];
+char angles_buffer[50];
+char f_p_str[10];
 #define LEDPIN 5
 
 MPU6050 imu(MPU_ADDRESS, MPU_ACCEL_RANGE, GYRO_RANGE); 
 float pitch, roll, f_pitch, f_roll;
-float currentSampleMillis = 0;
-float lastSampleMillis = 0;
+float acc_mag_raw, acc_mag_filtered;
+// unsigned long currentSampleMillis = 0;
+unsigned long lastSampleMillis = 0;
 unsigned long sample_interval = 10; // 10 ms -> 100Hz
 
 void setup() {
     Serial.begin(SERIAL_BAUDRATE);
     imu.init();
     pinMode(LEDPIN, OUTPUT);
-}
-
-void blink() {
-    now = millis();
-    if((now - previous) > interval) {
-        led_state = !led_state;
-        previous=now;
-        digitalWrite(LEDPIN, led_state);   
-    }
-
-}
-    
+} 
 
 void loop() {
-    blink();
-    // float ax = imu.readXAcceleration();
+
+    // simple blink for status indication
+    now = millis();
+    if((now - previous) >= interval) {
+        previous=now;
+        led_state = !led_state;
+        digitalWrite(LEDPIN, led_state);  
+    }
+
+    /**
+     * ACTIVITY MONITOR
+     */
+    // read raw acceleration values 
+    float ax = imu.readXAcceleration();
     // float ay = imu.readYAcceleration();
     // float az = imu.readZAcceleration();
 
-    roll = imu.getRoll();
-    pitch = imu.getPitch();
+    // filter acceleration values 
+    float ax_filtered = imu.movingAverageFilter(ax);
+    //Serial.print(ax); Serial.print(",");Serial.println(ax_filtered);
 
     // get sample time for the IMU data at 100HZ sample rate
-    currentSampleMillis = millis();
-    if(currentSampleMillis-lastSampleMillis >= sample_interval) {
-        lastSampleMillis = currentSampleMillis;
+    if((now-lastSampleMillis) >= sample_interval) {
+        lastSampleMillis = now;
 
         // filtered angles 
         f_pitch = imu.filterPitch(sample_interval);
         f_roll = imu.filterRoll(sample_interval);
-        sprintf(angles_buffer, "%.2f,%.2f\n", pitch, f_pitch);
-
+        sprintf(angles_buffer, "%.2f,%.2f,%.2f,%.2f\n", pitch, f_pitch, roll, f_roll);
+        // dtostrf(f_pitch, 4, 2, f_p_str);
     }
 
-    // sprintf(acc_buffer, "%.2f,%.2f,%.2f\r\n",ax,ay,az);
-    
+    // compute magnitude of acceleration 
+    acc_mag_raw = imu.computeRawAccelerationMagnitude();
+    acc_mag_filtered =  imu.computeAccelerationMagnitude();
+    Serial.print(acc_mag_raw); Serial.print(","); Serial.println(acc_mag_filtered);
 
-    //Serial.print(acc_buffer);
-    Serial.println(angles_buffer);
+    /**
+     * END OF ACTIVITY MONITOR
+     */
+    
 
 }

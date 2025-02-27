@@ -255,6 +255,20 @@ float MPU6050::computeAccelerationMagnitude() {
     float ya = this->readYAcceleration();
     float za = this->readZAcceleration();
 
+    // filter the raw values using moving average filter
+    float xa_filt = this->movingAverageFilter(xa);
+    float ya_filt = this->movingAverageFilter(ya);
+    float za_filt = this->movingAverageFilter(za);
+    
+    float mag = sqrt(pow(xa_filt,2) + pow(ya_filt,2) + pow(za_filt,2));
+    return mag;
+}
+
+float MPU6050::computeRawAccelerationMagnitude() {
+    float xa = this->readXAcceleration();
+    float ya = this->readYAcceleration();
+    float za = this->readZAcceleration();
+    
     float mag = sqrt(pow(xa,2) + pow(ya,2) + pow(za,2));
     return mag;
 }
@@ -265,19 +279,26 @@ float MPU6050::computeAccelerationMagnitude() {
  * remove low frequency noise from gyroscope and fuse the sensors 
 */
 float MPU6050::filterPitch(unsigned long sample_time) {
-
-    // this->filtered_pitch = ALPHA * (this->getPitch() + this->readXAngularVelocity() * sample_time/USEC_TO_SEC_FACTOR) *  (1-ALPHA)*this->readXAcceleration();  
-    // // float angle;
-    // // angle = ALPHA*(angle +)
-
-    // sample time is in seconds 
+    // sample time is in milliseconds, divide by 1000 to convert to seconds 
     this->filtered_pitch = ALPHA * (this->filtered_pitch + this->readXAngularVelocity() * sample_time/1000) + (1-ALPHA)*this->readXAcceleration();
     return this->filtered_pitch;
 }
 
 float MPU6050::filterRoll(unsigned long sample_time) {
-    this->filtered_roll = ALPHA * (this->roll_angle + this->readYAngularVelocity() * sample_time/USEC_TO_SEC_FACTOR) *  (1-ALPHA)*this->readYAcceleration();  
+    this->filtered_roll = ALPHA * (this->filtered_roll + this->readYAngularVelocity() * sample_time/1000) *  (1-ALPHA)*this->readYAcceleration();  
     return this->filtered_roll;
+}
+
+float MPU6050::movingAverageFilter(float value) {
+    values[this->mov_avg_index] = value;
+    this->mov_avg_index = (this->mov_avg_index + 1) % FILTER_BUFFER_SIZE;
+
+    float sum = 0;
+    for(int i=0; i< FILTER_BUFFER_SIZE; i++) {
+        sum += values[i];
+    }
+
+    return sum/FILTER_BUFFER_SIZE; // averaged value
 }
 
 // float MPU6050::readTemperature() {
