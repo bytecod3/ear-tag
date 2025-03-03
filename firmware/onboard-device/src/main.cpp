@@ -37,8 +37,9 @@ typedef struct gpsPacket{
 } GPS_PACKET;
 
 char gps_buffer[10];
-//uint8_t day=0, month=0, hr=0, minute=0, sec=0;
-//uint16_t year=0;
+unsigned long GPS_current_millis = 0;
+unsigned long GPS_last_millis = 0;
+unsigned long GPS_sample_interval = 5000; // TODO: set longer frequency
 
 GPS_PACKET gps_packet;
 
@@ -182,6 +183,21 @@ void loop() {
     /**
      * END OF ACTIVITY MONITOR
      */
+
+    /**
+     * GPS DATA COLLECTION
+     * Data is read at a frequency defined by the DATA_UPDATE frequency value
+     */
+    GPS_current_millis = millis();
+    if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
+        GPS_get_coordinates();
+        GPS_last_millis = GPS_current_millis;
+    }
+
+    /**
+     * END OF GPS DATA
+     */
+
     
 
 }

@@ -95,7 +95,18 @@ The red line shows the cleaner values obtained from the accelerometer.
 
 By monitoring the value of this acceleration, we can be able to set a threshold that we then check to determine if there is a sudden upsurge of activity.
 
+## Real Time animal tracking with GPS 
+To track the animal in real time we emply a NEO6M GPS module that read the GPS location data. The data read from GPS is:  
+- latitude
+- longitude
+- day
+- month
+- year
+- minute 
+- second 
 
+This data is then packaged into a packet to make it easier for transmission. 
+The GPS is read at a frequency defined by the DATA_UPDATE frequency value.
 
 ## Schematics 
 
