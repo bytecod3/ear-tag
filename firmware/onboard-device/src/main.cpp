@@ -47,11 +47,40 @@ GPS_PACKET gps_packet;
  * End of GPS variables
  */
 
+
+/*
+* LORA variables
+ */
+char lora_msg[100];
+
 /**
  * function prototypes
  */
  void GPS_init();
  void GPS_get_coordinates();
+ void LORA_init();
+ void LORA_send_packet(char* msg);
+
+ /**
+* Initialize LORA module
+*/
+ void initLORA() {
+    LoRa.setPins(LORA_CS, LORA_RST, LORA_DIO);
+    if(!LoRa.begin(LORA_FREQUENCY)) {
+        debugln("Lora failed to start");
+    } else {
+        debugln("[+]Lora started OK!");
+    }
+}
+
+void LORA_send_packet(char* msg) {
+
+    LoRa.beginPacket();
+    LoRa.print(msg);
+    LoRa.endPacket();
+    delay(LORA_DELAY);
+
+}
 
  /**
   * Function implementation
@@ -197,6 +226,11 @@ void loop() {
     /**
      * END OF GPS DATA
      */
+
+    /**
+    * Package LORA packet
+    */
+
 
     
 
