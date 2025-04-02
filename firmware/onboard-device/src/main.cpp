@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <TinyGPSPlus.h>
+#include <LoRa.h>
+#include <math.h>
 #include "defines.h"
 #include "mpu.h"
 
@@ -53,6 +55,14 @@ GPS_PACKET gps_packet;
  */
 char lora_msg[100];
 
+
+/**
+* Other variables
+*/
+enum DEVICE_STATES{
+  OPERATIONAL = 1,
+  SIMULATION
+};
 /**
  * function prototypes
  */
@@ -150,7 +160,7 @@ void GPS_get_coordinates() {
 
                 gps_packet.hr = gps.time.hour() + GMT_OFFSET;
                 gps_packet.minute = gps.time.minute();
-                gps_packet.sec = gps.time.sec();
+                gps_packet.sec = gps.time.second();
 
             } else {
                 //debug(F("INVALID"));
@@ -166,6 +176,7 @@ void GPS_get_coordinates() {
 void setup() {
     Serial.begin(SERIAL_BAUDRATE);
     imu.init();
+     initLORA();
     pinMode(LEDPIN, OUTPUT);
 
     GPS_init();
@@ -230,6 +241,7 @@ void loop() {
     /**
     * Package LORA packet
     */
+    //package_lora();
 
 
     

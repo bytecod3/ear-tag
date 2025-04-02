@@ -26,9 +26,9 @@
 #define GMT_OFFSET 3
 
 #define LORA_FREQUENCY 433E6
-#define LORA_CS 4
-#define LORA_RST    2
-#define LORA_DIO    22
+#define LORA_CS 25
+#define LORA_RST    26
+#define LORA_DIO    27
 #define LORA_DELAY 3000
 
 #endif // DEFINES_H
