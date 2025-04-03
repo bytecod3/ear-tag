@@ -1,6 +1,12 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+
+
+#define LED1 14
+#define LED2 12
+#define SIMULATE_BUTTON 4
+
 #define SERIAL_BAUDRATE 115200
 
 #define SERIAL_DEBUG 1

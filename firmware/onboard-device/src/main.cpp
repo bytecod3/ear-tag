@@ -13,7 +13,6 @@ bool led_state = LOW;
 char acc_buffer[20];
 char angles_buffer[50];
 char f_p_str[10];
-#define LEDPIN 5
 
 MPU6050 imu(MPU_ADDRESS, MPU_ACCEL_RANGE, GYRO_RANGE); 
 float pitch, roll, f_pitch, f_roll;
@@ -63,6 +62,15 @@ enum DEVICE_STATES{
   OPERATIONAL = 1,
   SIMULATION
 };
+
+int current_state;
+
+int button_state = HIGH;
+int last_button_state = HIGH;
+unsigned long last_debounce_time = 0;
+const unsigned long debounce_delay = 100;
+int press_count = 0;
+
 /**
  * function prototypes
  */
@@ -176,74 +184,107 @@ void GPS_get_coordinates() {
 void setup() {
     Serial.begin(SERIAL_BAUDRATE);
     imu.init();
-     initLORA();
-    pinMode(LEDPIN, OUTPUT);
-
+    initLORA();
     GPS_init();
+    pinMode(LED1, OUTPUT);
+    pinMode(LED2, OUTPUT);
+
+    pinMode(SIMULATE_BUTTON, INPUT);
 } 
 
 void loop() {
+  // get current time
+  now = millis();
 
-    // simple blink for status indication
-    now = millis();
-    if((now - previous) >= interval) {
-        previous=now;
-        led_state = !led_state;
-        digitalWrite(LEDPIN, led_state);  
+  // read simulate button
+  int reading = digitalRead(SIMULATE_BUTTON);
+  if(reading != last_button_state) {
+    last_debounce_time = now;
+  }
+
+  if((now - last_debounce_time) > debounce_delay) {
+    if(reading != button_state) {
+
+      button_state = reading;
+
+      if(button_state == LOW) {
+        press_count++;
+        debugln("pressed");
+      }
     }
+  }
+  last_button_state = reading;
 
-    /**
-     * ACTIVITY MONITOR
-     */
-    // read raw acceleration values 
-    float ax = imu.readXAcceleration();
-    // float ay = imu.readYAcceleration();
-    // float az = imu.readZAcceleration();
+  if(press_count == 2) {
+    press_count = 0;
+  }
 
-    // filter acceleration values 
-    float ax_filtered = imu.movingAverageFilter(ax);
-    //Serial.print(ax); Serial.print(",");Serial.println(ax_filtered);
+  /* change state */
+  if(press_count == 0) {
+    current_state = DEVICE_STATES::SIMULATION;
+  } else if(press_count == 1) {
+    current_state = DEVICE_STATES::OPERATIONAL;
+  }
 
-    // get sample time for the IMU data at 100HZ sample rate
-    if((now-lastSampleMillis) >= sample_interval) {
-        lastSampleMillis = now;
+  //debugln(current_state);
 
-        // filtered angles 
-        f_pitch = imu.filterPitch(sample_interval);
-        f_roll = imu.filterRoll(sample_interval);
-        sprintf(angles_buffer, "%.2f,%.2f,%.2f,%.2f\n", pitch, f_pitch, roll, f_roll);
-        // dtostrf(f_pitch, 4, 2, f_p_str);
-    }
+  // blink for status indication
+  if((now - previous) >= interval) {
+      previous=now;
+      led_state = !led_state;
+      digitalWrite(LED1, led_state);
+  }
 
-    // compute magnitude of acceleration 
-    acc_mag_raw = imu.computeRawAccelerationMagnitude();
-    acc_mag_filtered =  imu.computeAccelerationMagnitude();
-    Serial.print(acc_mag_raw); Serial.print(","); Serial.println(acc_mag_filtered);
+  /**
+   * ACTIVITY MONITOR
+   */
+  // read raw acceleration values
+  float ax = imu.readXAcceleration();
+  // float ay = imu.readYAcceleration();
+  // float az = imu.readZAcceleration();
 
-    /**
-     * END OF ACTIVITY MONITOR
-     */
+  // filter acceleration values
+  float ax_filtered = imu.movingAverageFilter(ax);
+  //Serial.print(ax); Serial.print(",");Serial.println(ax_filtered);
 
-    /**
-     * GPS DATA COLLECTION
-     * Data is read at a frequency defined by the DATA_UPDATE frequency value
-     */
-    GPS_current_millis = millis();
-    if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
-        GPS_get_coordinates();
-        GPS_last_millis = GPS_current_millis;
-    }
+  // get sample time for the IMU data at 100HZ sample rate
+  if((now-lastSampleMillis) >= sample_interval) {
+      lastSampleMillis = now;
 
-    /**
-     * END OF GPS DATA
-     */
+      // filtered angles
+      f_pitch = imu.filterPitch(sample_interval);
+      f_roll = imu.filterRoll(sample_interval);
+      sprintf(angles_buffer, "%.2f,%.2f,%.2f,%.2f\n", pitch, f_pitch, roll, f_roll);
+      // dtostrf(f_pitch, 4, 2, f_p_str);
+  }
 
-    /**
-    * Package LORA packet
-    */
-    //package_lora();
+  // compute magnitude of acceleration
+  acc_mag_raw = imu.computeRawAccelerationMagnitude();
+  acc_mag_filtered =  imu.computeAccelerationMagnitude();
+  //Serial.print(acc_mag_raw); Serial.print(","); Serial.println(acc_mag_filtered);
 
+  /**
+   * END OF ACTIVITY MONITOR
+   */
 
-    
+  /**
+   * GPS DATA COLLECTION
+   * Data is read at a frequency defined by the DATA_UPDATE frequency value
+   */
+  GPS_current_millis = millis();
+  if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
+      GPS_get_coordinates();
+      GPS_last_millis = GPS_current_millis;
+  }
 
+  // calculate haversine
+
+  /**
+   * END OF GPS DATA
+   */
+
+  /**
+  * Package LORA packet
+  */
+  //package_lora();
 }
