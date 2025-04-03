@@ -108,6 +108,25 @@ To track the animal in real time we emply a NEO6M GPS module that read the GPS l
 This data is then packaged into a packet to make it easier for transmission. 
 The GPS is read at a frequency defined by the DATA_UPDATE frequency value.
 
+## LORA packet structure
+| Field Name              | Data Type    | Description                     |
+|-------------------------|--------------|---------------------------------|
+| **tag_id**              | `uint32_t`   | Unique identifier for the tag   |
+| **mode**                | `uint8_t`    | `0` = Operational, `1` = Simulation |
+| **day**                 | `uint8_t`    | Day (1-31)                      |
+| **month**               | `uint8_t`    | Month (1-12)                    |
+| **year**                | `uint16_t`   | Year (e.g., 2025)               |
+| **hour**                | `uint8_t`    | Hour (0-23)                     |
+| **minute**              | `uint8_t`    | Minute (0-59)                   |
+| **second**              | `uint8_t`    | Second (0-59)                   |
+| **latitude**            | `float`      | GPS latitude in degrees         |
+| **longitude**           | `float`      | GPS longitude in degrees        |
+| **geo_fence_proximity** | `uint8_t`    | Proximity to geofence (0-100%)  |
+| **acceleration_x**      | `float`      | X-axis acceleration (m/s²)     |
+| **acceleration_y**      | `float`      | Y-axis acceleration (m/s²)     |
+| **acceleration_z**      | `float`      | Z-axis acceleration (m/s²)     |
+| **acceleration_magnitude** | `float`  | √(x² + y² + z²) (m/s²)        |
+
 ## Schematics 
 
 ## PCB designs
