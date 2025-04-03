@@ -5,6 +5,9 @@
 #include "defines.h"
 #include "mpu.h"
 
+char tag_id[] = "TAG_001";
+char data_packet[200]; // to hold the data packet for transmission
+
 unsigned long now=0;
 unsigned long previous = 0;
 int interval = 500;
@@ -43,11 +46,9 @@ unsigned long GPS_last_millis = 0;
 unsigned long GPS_sample_interval = 5000; // TODO: set longer frequency
 
 GPS_PACKET gps_packet;
-
 /**
  * End of GPS variables
  */
-
 
 /*
 * LORA variables
@@ -177,9 +178,14 @@ void GPS_get_coordinates() {
             //debugln();
         }
     }
+}
 
-  }
-
+void transmit_to_base_station(char* data) {
+  LoRa.beginPacket();
+  LoRa.print(data);
+  LoRa.endPacket();
+  delay(500);
+}
 
 void setup() {
     Serial.begin(SERIAL_BAUDRATE);
@@ -226,7 +232,12 @@ void loop() {
     current_state = DEVICE_STATES::OPERATIONAL;
   }
 
-  //debugln(current_state);
+  // convert states to string for debug
+  if(current_state == 1) {
+    debugln("OPERATIONAL ");
+  } else if(current_state == 2) {
+    debugln("SIMULATION ");
+  }
 
   // blink for status indication
   if((now - previous) >= interval) {
@@ -240,8 +251,8 @@ void loop() {
    */
   // read raw acceleration values
   float ax = imu.readXAcceleration();
-  // float ay = imu.readYAcceleration();
-  // float az = imu.readZAcceleration();
+  float ay = imu.readYAcceleration();
+  float az = imu.readZAcceleration();
 
   // filter acceleration values
   float ax_filtered = imu.movingAverageFilter(ax);
@@ -267,6 +278,8 @@ void loop() {
    * END OF ACTIVITY MONITOR
    */
 
+  // read GPD data only in OPERATIONAL mode
+
   /**
    * GPS DATA COLLECTION
    * Data is read at a frequency defined by the DATA_UPDATE frequency value
@@ -285,6 +298,39 @@ void loop() {
 
   /**
   * Package LORA packet
+  * tag_id
+  * day
+  * month,
+  * year,
+  * hour,
+  * minute,
+  * second,
+  * latitude
+  * longitude,
+  * geo_fence_proximity
+  * acceleration x,
+  * acceleration y
+  * acceleration z,
+  * acceleration_magnitude
+  *
   */
-  //package_lora();
+  sprintf(data_packet,
+          "%s,%d,%d,%d,%d,%.4f,%.4f,%.2f,%.2f,%.2f,%.2f",
+          tag_id,
+          gps_packet.day,
+          gps_packet.month,
+          gps_packet.year,
+          gps_packet.hr,
+          gps_packet.minute,
+          gps_packet.sec,
+          gps_packet.latitude,
+          gps_packet.longitude,
+          ax,
+          ay,
+          az,
+          acc_mag_filtered
+          );
+
+  transmit_to_base_station(data_packet);
+
 }
