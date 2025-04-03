@@ -9,9 +9,13 @@ char tag_id[] = "TAG_001";
 char data_packet[200]; // to hold the data packet for transmission
 
 unsigned long now=0;
-unsigned long previous = 0;
-int interval = 500;
-bool led_state = LOW;
+unsigned long led1_previous = 0;
+int led1_interval = 500;
+bool led1_state = LOW;
+
+unsigned long led2_previous = 0;
+int led2_interval = 100; // determined by the state we are in
+bool led2_state = LOW;
 
 char acc_buffer[20];
 char angles_buffer[50];
@@ -46,6 +50,30 @@ unsigned long GPS_last_millis = 0;
 unsigned long GPS_sample_interval = 5000; // TODO: set longer frequency
 
 GPS_PACKET gps_packet;
+
+uint8_t geo_fence_proximity = 0;
+
+const float simulatedCoordinates[][2] = {
+    {-1.2921, 36.8319},  // center point
+    { -1.2921, 36.8219 },  // simulated point 1 -> 1.17km from center
+    { -1.3000, 36.8000 },  // Simulated Point 2 -> 3.65km from center
+    { -1.3100, 36.9100 },   // Simulated Point 3 -> 8.9km from center
+    { -1.3100, 36.9900 }   // Simulated Point 3 -> 17.68km from center
+};
+
+/**
+ * These represent the radiuses we need to check every minute the animal
+ * is grazing
+ *
+ * distance in KM
+ */
+enum GEO_FENCE_LIMITS {
+  FENCE_1 = 2,
+  FENCE_2 = 5,
+  FENCE_3 = 10,
+  OUTSIDE_FENCE = 15
+};
+
 /**
  * End of GPS variables
  */
@@ -54,7 +82,6 @@ GPS_PACKET gps_packet;
 * LORA variables
  */
 char lora_msg[100];
-
 
 /**
 * Other variables
@@ -65,11 +92,10 @@ enum DEVICE_STATES{
 };
 
 int current_state;
-
 int button_state = HIGH;
 int last_button_state = HIGH;
 unsigned long last_debounce_time = 0;
-const unsigned long debounce_delay = 100;
+const unsigned long debounce_delay = 50;
 int press_count = 0;
 
 /**
@@ -184,7 +210,7 @@ void transmit_to_base_station(char* data) {
   LoRa.beginPacket();
   LoRa.print(data);
   LoRa.endPacket();
-  delay(500);
+  delay(200);
 }
 
 void setup() {
@@ -240,10 +266,10 @@ void loop() {
   }
 
   // blink for status indication
-  if((now - previous) >= interval) {
-      previous=now;
-      led_state = !led_state;
-      digitalWrite(LED1, led_state);
+  if((now - led1_previous) >= led1_interval) {
+      led1_previous=now;
+      led1_state = !led1_state;
+      digitalWrite(LED1, led1_state);
   }
 
   /**
@@ -278,27 +304,42 @@ void loop() {
    * END OF ACTIVITY MONITOR
    */
 
-  // read GPD data only in OPERATIONAL mode
+  // read GPS data only in OPERATIONAL mode
+  if(current_state == DEVICE_STATES::OPERATIONAL) {
 
-  /**
+    led2_interval = 1000;
+    /**
    * GPS DATA COLLECTION
    * Data is read at a frequency defined by the DATA_UPDATE frequency value
-   */
-  GPS_current_millis = millis();
-  if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
+     */
+    GPS_current_millis = millis();
+    if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
       GPS_get_coordinates();
       GPS_last_millis = GPS_current_millis;
+    }
+
+    // LED1 blink
+    if((now - led1_previous) >= 1000) {
+      led1_previous=now;
+      led1_state = !led1_state;
+      digitalWrite(LED2, led1_state);
+    }
+
+  } else if(current_state == DEVICE_STATES::SIMULATION) {
+    led2_interval = 250;
   }
 
-  // calculate haversine
-
-  /**
-   * END OF GPS DATA
-   */
+  // LED 2 BLINK
+  if((now - led2_previous) >= led2_interval) {
+    led2_previous=now;
+    led2_state = !led2_state;
+    digitalWrite(LED2, led2_state);
+  }
 
   /**
   * Package LORA packet
   * tag_id
+  * mode (operational or simulation)
   * day
   * month,
   * year,
@@ -315,7 +356,7 @@ void loop() {
   *
   */
   sprintf(data_packet,
-          "%s,%d,%d,%d,%d,%.4f,%.4f,%.2f,%.2f,%.2f,%.2f",
+          "%s,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%d,%.2f,%.2f,%.2f,%.2f",
           tag_id,
           gps_packet.day,
           gps_packet.month,
@@ -325,6 +366,7 @@ void loop() {
           gps_packet.sec,
           gps_packet.latitude,
           gps_packet.longitude,
+          geo_fence_proximity,
           ax,
           ay,
           az,
