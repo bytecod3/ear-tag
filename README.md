@@ -127,6 +127,25 @@ The GPS is read at a frequency defined by the DATA_UPDATE frequency value.
 | **acceleration_z**      | `float`      | Z-axis acceleration (m/s²)     |
 | **acceleration_magnitude** | `float`  | √(x² + y² + z²) (m/s²)        |
 
+
+## Network and WiFi Provisioning
+The device is configured to search for available networks and connect to them automatically.   To do this, we implement a WIFI provisioning scheme that allows you to connect to the network you desire. 
+
+Follow the steps below to connect:
+
+- once the device is powered on, it will create a WIFI netwoek called "EAR-TAG-WIFI", whose password is "password".
+- Using your phone or PC, connect to this network.
+- Once connected, open your browser and type the following IP address"
+```
+192.168.4.1
+```
+
+- A page with buttons will open up.
+- Click on "Configure WIFI". A list of available networks will be shown. (Also here you can type teh SSID or password of the network that you will create, assuming you are using only one device)
+- click on save
+- The device will reboot itself and save the network accordingly.
+
+
 ## Schematics 
 
 ## PCB designs

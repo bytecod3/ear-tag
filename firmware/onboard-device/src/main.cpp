@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <TinyGPSPlus.h>
 #include <LoRa.h>
+#include <WiFiManager.h>
 #include <math.h>
 #include "defines.h"
 #include "mpu.h"
@@ -101,10 +102,26 @@ int press_count = 0;
 /**
  * function prototypes
  */
+ void WIFI_configure();
  void GPS_init();
  void GPS_get_coordinates();
  void LORA_init();
  void LORA_send_packet(char* msg);
+
+ void WIFI_configure() {
+   WiFi.mode(WIFI_STA);
+   WiFiManager wm;
+
+   // automatically connect using stored settings
+   bool res;
+   res = wm.autoConnect("EAR-TAG-WIFI", "password");
+
+   if(!res) {
+     debugln("Failed to connect");
+   } else {
+     debugln("Connected to WIFI");
+   }
+ }
 
  /**
 * Initialize LORA module
@@ -215,12 +232,12 @@ void transmit_to_base_station(char* data) {
 
 void setup() {
     Serial.begin(SERIAL_BAUDRATE);
+    WIFI_configure();
     imu.init();
     initLORA();
     GPS_init();
     pinMode(LED1, OUTPUT);
     pinMode(LED2, OUTPUT);
-
     pinMode(SIMULATE_BUTTON, INPUT);
 } 
 
