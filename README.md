@@ -170,6 +170,9 @@ const char* server_url = "http://YOUR_IP_ADDRESS:3000/api/location";
 ```
 Replace with your IP address.
 
+Upload the code the device and restart.
+
+
 ## Schematics 
 
 ## PCB designs
