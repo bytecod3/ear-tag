@@ -2,8 +2,10 @@
 #include <TinyGPSPlus.h>
 #include <LoRa.h>
 #include <WiFiManager.h>
+#include <WiFi.h>
 #include <math.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
 #include "defines.h"
 #include "mpu.h"
 #include "soc/soc.h"
@@ -107,10 +109,13 @@ unsigned long last_debounce_time = 0;
 const unsigned long debounce_delay = 50;
 int press_count = 0;
 
-const char* ssid = "Eduh";
-const char* password = "password2";
+//const char* ssid = "Eduh";
+//const char* password = "password2";
 
-const char* server_url = "http://127.0.0.1:3000/api/locations";
+const char* ssid = "Gakibia unit 3";
+const char* password = "password";
+
+const char* server_url = "http://192.168.0.111:3000/api/location";
 
 /**
  * function prototypes
@@ -134,15 +139,15 @@ const char* server_url = "http://127.0.0.1:3000/api/locations";
 
  void WIFI_basic_connection() {
    debugln();
-   debug("Connecting to ");
-   debugln(ssid);
+   debug("Connecting to Wifi");
+   //debugln(ssid);
 
-   WiFi.begin("Boardroom", "markmambo");
+   WiFi.begin(ssid, password);
 
    int attempts = 0;
-   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+   while ((WiFi.status() != WL_CONNECTED) && (attempts < 100)) {
      delay(500);
-     Serial.print(".");
+     debugln("connecting...");
      attempts++;
    }
 
@@ -179,26 +184,33 @@ const char* server_url = "http://127.0.0.1:3000/api/locations";
    debugln("Sending to server...");
    if(WiFi.status() == WL_CONNECTED) {
      HTTPClient http;
+
+     StaticJsonDocument<200> doc;
+     doc["device_id"] = tag_id;
+     doc["latitude"] = lat;
+     doc["longitude"] = lng;
+
+     String payload;
+     serializeJson(doc, payload);
+
      http.begin(server_url);
      http.addHeader("Content-Type", "application/json");
 
-     // create JSON payload
-     String payload = "{\"deviceId\":\"TAG_001\",";
-     payload += "\"latitude\":" + String(lat, 6) + ",";
-     payload += "\"longitude\":" + String(lng, 6) + "}";
+     int http_response_code = http.POST(payload);
 
-     int http_code = http.POST(payload);
-
-     if(http_code > 0) {
-       debugf("HTTP Response code: %d\n", http_code);
+     if(http_response_code > 0) {
+       debugf("HTTP Response code: %d\n", http_response_code);
        String response = http.getString();
        debugln(response);
      } else {
-       debugf("Error sending POSTT: %s\n", http.errorToString(http_code).c_str());
+       debugf("Error sending POST: %s\n", http.errorToString(http_response_code).c_str());
+       debugln(http_response_code);
      }
 
      http.end();
 
+   } else {
+     debugln("Wifi Not Available");
    }
  }
 
@@ -356,11 +368,11 @@ void loop() {
   }
 
   // convert states to string for debug
-  if(current_state == 1) {
-    debugln("OPERATIONAL ");
-  } else if(current_state == 2) {
-    debugln("SIMULATION ");
-  }
+//  if(current_state == 1) {
+//    debugln("OPERATIONAL ");
+//  } else if(current_state == 2) {
+//    debugln("SIMULATION ");
+//  }
 
   // blink for status indication
   if((now - led1_previous) >= led1_interval) {

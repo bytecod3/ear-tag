@@ -91,6 +91,6 @@ app.get('/api/location', async (req, res) => {
 });
 
 // start the server
-app.listen(3000, () => {
+app.listen(3000,'0.0.0.0', () => {
     console.log('server started on port 3000')
 })
