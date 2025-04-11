@@ -3,8 +3,11 @@
 #include <LoRa.h>
 #include <WiFiManager.h>
 #include <math.h>
+#include <HTTPClient.h>
 #include "defines.h"
 #include "mpu.h"
+#include "soc/soc.h"
+#include "soc/rtc_cntl_reg.h"
 
 char tag_id[] = "TAG_001";
 char data_packet[200]; // to hold the data packet for transmission
@@ -17,6 +20,11 @@ bool led1_state = LOW;
 unsigned long led2_previous = 0;
 int led2_interval = 100; // determined by the state we are in
 bool led2_state = LOW;
+
+// data sending timing variables
+unsigned long last_http_time = 0;
+unsigned long current_http_time = 0;
+unsigned long http_send_interval = 5000;
 
 char acc_buffer[20];
 char angles_buffer[50];
@@ -99,6 +107,11 @@ unsigned long last_debounce_time = 0;
 const unsigned long debounce_delay = 50;
 int press_count = 0;
 
+const char* ssid = "Eduh";
+const char* password = "password2";
+
+const char* server_url = "http://127.0.0.1:3000/api/locations";
+
 /**
  * function prototypes
  */
@@ -107,8 +120,44 @@ int press_count = 0;
  void GPS_get_coordinates();
  void LORA_init();
  void LORA_send_packet(char* msg);
+ void WIFI_basic_connection();
+ void send_packet_to_server(double lat, double lng);
 
- void WIFI_configure() {
+ /**
+  *
+  * TODO: add multiple network support
+  * add static IP address
+  * add reconnection logic
+  * add signal strength monitoring
+  * add connection timeout
+  */
+
+ void WIFI_basic_connection() {
+   debugln();
+   debug("Connecting to ");
+   debugln(ssid);
+
+   WiFi.begin("Boardroom", "markmambo");
+
+   int attempts = 0;
+   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+     delay(500);
+     Serial.print(".");
+     attempts++;
+   }
+
+   if (WiFi.status() == WL_CONNECTED) {
+     debugln("");
+     debugln("WiFi connected");
+     debugln("IP address: ");
+     debugln(WiFi.localIP());
+   } else {
+     debugln("");
+     debugln("Failed to connect to WiFi");
+   }
+ }
+
+ void WIFI_provisioning() {
    WiFi.mode(WIFI_STA);
    WiFiManager wm;
 
@@ -120,6 +169,36 @@ int press_count = 0;
      debugln("Failed to connect");
    } else {
      debugln("Connected to WIFI");
+   }
+ }
+
+ /**
+  * Send location to server
+  */
+ void send_packet_to_server(double lat, double lng) {
+   debugln("Sending to server...");
+   if(WiFi.status() == WL_CONNECTED) {
+     HTTPClient http;
+     http.begin(server_url);
+     http.addHeader("Content-Type", "application/json");
+
+     // create JSON payload
+     String payload = "{\"deviceId\":\"TAG_001\",";
+     payload += "\"latitude\":" + String(lat, 6) + ",";
+     payload += "\"longitude\":" + String(lng, 6) + "}";
+
+     int http_code = http.POST(payload);
+
+     if(http_code > 0) {
+       debugf("HTTP Response code: %d\n", http_code);
+       String response = http.getString();
+       debugln(response);
+     } else {
+       debugf("Error sending POSTT: %s\n", http.errorToString(http_code).c_str());
+     }
+
+     http.end();
+
    }
  }
 
@@ -231,8 +310,10 @@ void transmit_to_base_station(char* data) {
 }
 
 void setup() {
+    WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
     Serial.begin(SERIAL_BAUDRATE);
-    WIFI_configure();
+    //WIFI_provisioning();
+    WIFI_basic_connection();
     imu.init();
     initLORA();
     GPS_init();
@@ -253,7 +334,6 @@ void loop() {
 
   if((now - last_debounce_time) > debounce_delay) {
     if(reading != button_state) {
-
       button_state = reading;
 
       if(button_state == LOW) {
@@ -322,35 +402,50 @@ void loop() {
    */
 
   // read GPS data only in OPERATIONAL mode
-  if(current_state == DEVICE_STATES::OPERATIONAL) {
-
-    led2_interval = 1000;
-    /**
-   * GPS DATA COLLECTION
-   * Data is read at a frequency defined by the DATA_UPDATE frequency value
-     */
-    GPS_current_millis = millis();
-    if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
-      GPS_get_coordinates();
-      GPS_last_millis = GPS_current_millis;
-    }
-
-    // LED1 blink
-    if((now - led1_previous) >= 1000) {
-      led1_previous=now;
-      led1_state = !led1_state;
-      digitalWrite(LED2, led1_state);
-    }
-
-  } else if(current_state == DEVICE_STATES::SIMULATION) {
-    led2_interval = 250;
-  }
+//  if(current_state == DEVICE_STATES::OPERATIONAL) {
+//
+//    led2_interval = 1000;
+//    /**
+//   * GPS DATA COLLECTION
+//   * Data is read at a frequency defined by the DATA_UPDATE frequency value
+//     */
+//    GPS_current_millis = millis();
+//    if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
+//      GPS_get_coordinates();
+//      GPS_last_millis = GPS_current_millis;
+//    }
+//
+//    // LED1 blink
+//    if((now - led1_previous) >= 1000) {
+//      led1_previous=now;
+//      led1_state = !led1_state;
+//      digitalWrite(LED2, led1_state);
+//    }
+//
+//  } else if(current_state == DEVICE_STATES::SIMULATION) {
+//    led2_interval = 250;
+//
+//    if(now - last_http_time > http_send_interval) {
+//      last_http_time = current_http_time;
+//      send_packet_to_server(15.55, 23.89);
+//    }
+//
+//  }
 
   // LED 2 BLINK
   if((now - led2_previous) >= led2_interval) {
     led2_previous=now;
     led2_state = !led2_state;
     digitalWrite(LED2, led2_state);
+  }
+
+  // send data to server
+  unsigned long current_http_time = millis();
+  if((current_http_time - last_http_time) >= http_send_interval) {
+    last_http_time = current_http_time;
+    float lat_a = 0.02;
+    float long_a = 0.02;
+    send_packet_to_server(15.55 + lat_a, 23.89+long_a);
   }
 
   /**
