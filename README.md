@@ -145,6 +145,30 @@ Follow the steps below to connect:
 - click on save
 - The device will reboot itself and save the network accordingly.
 
+## connecting to server
+This section defiens the steps to connect tot the server. The server is built using with NodeJS and runs a MongoDB database. 
+
+1. Install NodeJS, open the ```web app``` folder in terminal 
+2. Run the following command.
+```c
+nodemon server.js
+```
+3. To get the IP address of the server, run the following command in terminal of your host machine 
+```
+ipconfig
+```
+
+Now to make the ear-tag-device connect to the server, make sure the PC amd the ear tag are on the same network using the WIFI 
+connection procedures listed above. 
+
+### Update the server URL in code
+Since this is not a production environment and we have dynamic IP addresses, we need to update our server IP address in the Ear-tag firmware. Locate the server line below in the firmware and change to:
+
+```c
+const char* server_url = "http://YOUR_IP_ADDRESS:3000/api/location";
+
+```
+Replace with your IP address.
 
 ## Schematics 
 
