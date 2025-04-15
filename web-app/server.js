@@ -1,20 +1,25 @@
 const express = require('express')
-const ejs = require('ejs')
 const mongoose = require('mongoose')
-const bodyParser = require('body-parser');
-const Event = require('./models/event')
 const path = require('path');
+const WebSocket = require('ws');
 
 //const dbURL = "mongodb+srv://emwiti658:nU3mmvXQH1OA7BVr@ear-tag-cluster.qq2lahi.mongodb.net/?retryWrites=true&w=majority&appName=ear-tag-cluster"
 const dbURL = "mongodb+srv://emwiti658:nU3mmvXQH1OA7BVr@ear-tag-cluster.qq2lahi.mongodb.net/?appName=ear-tag-cluster";
 
 const app= express()
+
 app.set('view engine', 'ejs')
-app.use(bodyParser.json());
 app.set('views', path.join(__dirname, 'views'))
 
-// server sttic files from public directory 
-app.use(express.static(path.join(__dirname, 'public')))
+//middleware
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+
+// start the server
+const server = app.listen(3000,'0.0.0.0', () => {
+    console.log('server started on port 3000')
+})
 
 // connect to database
 //databse connection
@@ -42,24 +47,67 @@ const locationSchema = new mongoose.Schema({
   longitude: Number,
   timestamp: {type: Date, default: Date.now}
 })
+
 const Location = mongoose.model('Location', locationSchema);
-
-// routing paths
-
-// render the map page
-app.get('/', (req, res) => {
-    // static location 
-    const location = {
-        lat: -1.1018,
-        lng: 37.0144,
-        title: "Ear Tag Monitor"
-    }
-
-    res.render('map', {location})
-})
 
 // create model
 const locationData = mongoose.model('locationData', locationSchema);
+
+// create a websockets server
+const wss = new WebSocket.Server({server});
+
+// wwatch for location change
+const locationChangeStream = Location.watch();
+
+wss.on('connection', (ws) => {
+    console.log('New Client connected');
+
+    // send initial location
+    Location.find().sort({timestamp:-1}).limit(10)
+        .then(locations => {
+            ws.send(JSON.stringify({
+                type: 'initial',
+                data: locations
+            }))
+        })
+
+    // listen for change and broadcast to all clients
+    locationChangeStream.on('change', (change) => {
+        if (change.operationType === 'insert') {
+            Location.findById(change.documentKey._id)
+                .then(newLocation => {
+                    wss.clients.forEach(client => {
+                        if (client.readyState === WebSocket.OPEN) {
+                            client.send(JSON.stringify({
+                                type: 'update',
+                                data: newLocation
+                            }));
+                        }
+                    });
+                });
+        }
+    })
+
+    ws.on('close', () => {
+        console.log('Client disconnected');
+    });
+})
+// API endpoint to get latest locations (for web interface)
+app.get('/', async (req, res) => {
+    try {
+        const locations = await Location.find().sort({ timestamp: -1 }).limit(10);
+        //res.json(locations);
+        res.render('index', {
+            title: "Animal Ear Tag Tracker",
+            initialLocations: JSON.stringify(locations),
+            mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN || ''
+        })
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
 
 
 app.post('/api/location', async (req,res) => {
@@ -80,17 +128,12 @@ app.post('/api/location', async (req,res) => {
   }
 })
 
-// fetch data stored on database 
-app.get('/api/location', async (req, res) => {
-  try {
-      const data = await locationData.find().sort({ timestamp: -1 });
-      res.json(data);
-  } catch (error) {
-      res.status(500).json({ message: error.message });
-  }
+// API Endpoint for Locations
+app.get('/api/locations', async (req, res) => {
+    try {
+        const locations = await Location.find().sort({ timestamp: -1 });
+        res.json(locations);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
-
-// start the server
-app.listen(3000,'0.0.0.0', () => {
-    console.log('server started on port 3000')
-})

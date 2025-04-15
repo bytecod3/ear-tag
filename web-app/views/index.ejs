@@ -1,37 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event App</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Custom Map JS -->
+    <script src="/js/map.js"></script>
+    <%- include('partials/head') %>
 </head>
 <body>
+<div class="container">
+    <h1><%= title %></h1>
 
-    <form action="/submit-event" method="POST">
-        <h2>Event Creation Form</h2>
-      <label for="title">Title</label>
-      <input type="text" id="title" name="title" required>
-    
-      <label for="date">Date</label>
-      <input type="date" id="date" name="date" required>
-    
-      <label for="organizer">Organizer</label>
-      <input type="text" id="organizer" name="organizer" required>
-    
-      <label for="price">Price</label>
-      <input type="text" id="price" name="price" required>
-    
-      <label for="time">Time</label>
-      <input type="text" id="time" name="time" required>
-    
-      <label for="location">Location</label>
-      <input type="text" id="location" name="location" required>
-    
-      <label for="description">Description</label>
-      <textarea id="description" name="description" rows="4" required></textarea>
-    
-      <button type="submit">Submit</button>
-    </form>
-    
+    <div class="map-container">
+        <div id="map"></div>
+        <div id="info-panel">
+            <h3>Device Information</h3>
+            <div id="device-info"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="refresh-btn" class="btn">Refresh Locations</button>
+    </div>
+</div>
+
+<script>
+    // Pass initial data from server to client
+    const initialLocations = <%- initialLocations %>;
+    const wsUrl = window.location.origin.replace(/^http/, 'ws');
+</script>
+
+
 </body>
 </html>

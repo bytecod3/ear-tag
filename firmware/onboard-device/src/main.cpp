@@ -59,6 +59,8 @@ char gps_buffer[10];
 unsigned long GPS_current_millis = 0;
 unsigned long GPS_last_millis = 0;
 unsigned long GPS_sample_interval = 5000; // TODO: set longer frequency
+float base_lat = -1.50;
+float base_long = 15.22;
 
 GPS_PACKET gps_packet;
 
@@ -109,13 +111,13 @@ unsigned long last_debounce_time = 0;
 const unsigned long debounce_delay = 50;
 int press_count = 0;
 
-//const char* ssid = "Eduh";
-//const char* password = "password2";
+const char* ssid = "Eduh";
+const char* password = "password2";
 
-const char* ssid = "Gakibia unit 3";
-const char* password = "password";
+//const char* ssid = "Gakibia unit 3";
+//const char* password = "password";
 
-const char* server_url = "http://192.168.0.111:3000/api/location";
+const char* server_url = "http://192.168.46.1:3000/api/location";
 
 /**
  * function prototypes
@@ -334,7 +336,7 @@ void setup() {
     pinMode(SIMULATE_BUTTON, INPUT);
 
     // for random number generation
-    randomSeed(analogRead(345));
+    randomSeed(367);
 } 
 
 void loop() {
@@ -458,9 +460,12 @@ void loop() {
   unsigned long current_http_time = millis();
   if((current_http_time - last_http_time) >= http_send_interval) {
     last_http_time = current_http_time;
-    float lat_a = random(1, 1001)/1000.0;
-    float long_a = random(1, 201)/200.1;
-    send_packet_to_server(15.55 + lat_a, 23.89+long_a);
+
+    // generate random location data
+    float lat_offset = (random(0,2001) - 1000) / 10000.0;
+    float lng_offset = (random(0,2001) - 1000) / 10000.0;
+
+    send_packet_to_server(  base_lat + lat_offset, base_long + lng_offset);
   }
 
   /**
