@@ -332,6 +332,9 @@ void setup() {
     pinMode(LED1, OUTPUT);
     pinMode(LED2, OUTPUT);
     pinMode(SIMULATE_BUTTON, INPUT);
+
+    // for random number generation
+    randomSeed(analogRead(345));
 } 
 
 void loop() {
@@ -455,8 +458,8 @@ void loop() {
   unsigned long current_http_time = millis();
   if((current_http_time - last_http_time) >= http_send_interval) {
     last_http_time = current_http_time;
-    float lat_a = 0.02;
-    float long_a = 0.02;
+    float lat_a = random(1, 1001)/1000.0;
+    float long_a = random(1, 201)/200.1;
     send_packet_to_server(15.55 + lat_a, 23.89+long_a);
   }
 
