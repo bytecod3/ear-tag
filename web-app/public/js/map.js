@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
         icon: L.divIcon({ className: 'center-marker' })
     }).addTo(map).bindPopup()
 
-
     // Store device markers
     const deviceMarkers = {};
     const infoPanel = document.getElementById('device-info');
@@ -23,28 +22,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const dummyDevices = [
         {
             device_id: "TAG_001",
-            latitude: -1.2921 + (0.1 * Math.random()),  // Nairobi center ± ~11km
-            longitude: 36.8219 + (0.1 * Math.random()) // ~11km at equator
+            latitude: -1.2921 + (0.1 * Math.random()),
+            longitude: 36.8219 + (0.1 * Math.random()),
+            timestamp: "2025-04-15T15:03:18.567+00:00",
+            acc_mag: 5.6
+
         },
         {
             device_id: "TAG_002",
             latitude: -1.2921 + (0.15 * (Math.random() - 0.5)),
-            longitude: 36.8219 + (0.15 * (Math.random() - 0.5))
+            longitude: 36.8219 + (0.15 * (Math.random() - 0.5)),
+            timestamp: "2025-04-15T15:03:18.567+00:00",
+            acc_mag: 6
         },
         {
             device_id: "TAG_003",
             latitude: -1.35 + (0.2 * Math.random()),
-            longitude: 36.75 + (0.2 * (Math.random() - 0.3))
+            longitude: 36.75 + (0.2 * (Math.random() - 0.3)),
+            timestamp: "2025-04-15T15:03:18.567+00:00",
+            acc_mag: 2
         },
         {
             device_id: "TAG_004",
             latitude: -1.20 + (0.18 * (Math.random() - 0.4)),
-            longitude: 36.90 + (0.1 * Math.random())
+            longitude: 36.90 + (0.1 * Math.random()),
+            timestamp: "2025-04-15T15:03:18.567+00:00",
+            acc_mag: 10
         },
         {
             device_id: "TAG_005",
             latitude: -1.40 + (0.25 * Math.random()),
-            longitude: 36.70 + (0.25 * Math.random())
+            longitude: 36.70 + (0.25 * Math.random()),
+            timestamp: "2025-04-15T15:03:18.567+00:00",
+            acc_mag: 4
         }
     ]
 
@@ -199,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Add click handler to show info in panel
             deviceMarkers[device_id].on('click', () => {
-                showDeviceInfo(location);
+                showDeviceInfo(location, zone);
             });
         }
 
@@ -219,20 +229,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Show device info in panel
-    function showDeviceInfo(location) {
+    function showDeviceInfo(location, zone) {
+
+        // check shock levels
+        let level = ''
+        let phy_shock =''
+
+        if(location.acc_mag > 3) {
+            level = 'shock'
+            phy_shock = 'SHOCK'
+        } else {
+            level = 'safe'
+            phy_shock = 'NOMINAL'
+        }
+        let geo_class = 'acc-' + level
+
+        // check geographical areas
+        let geo_level = 'geo-'+zone
+
+
         infoPanel.innerHTML = `
-      <h4>${location.device_id}</h4>
+      <h4>Device ID:${location.device_id}</h4>
+      
       <p><strong>Coordinates:</strong><br>
       ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}</p>
+      
+      <p><strong>Resultant acceleration:</strong><br>
+      <span class = "${geo_class}">${location.acc_mag} </span>
+      </p>
+      
+      <p><strong>Physical shock condition:</strong><br>
+      <span class = "${geo_class}">${phy_shock} </span>
+      </p>
+      
+      <p><strong>Geographical safety level:</strong><br>
+ 
+      <span class = ${geo_level} >${zone} </span>
+      </p>
+    
+      
       <p><strong>Last Update:</strong><br>
       ${new Date(location.timestamp).toLocaleString()}</p>
       ${location.additionalData ? `
-        <p><strong>Additional Data:</strong></p>
-        <ul>
-          ${location.additionalData.battery ? `<li>Battery: ${location.additionalData.battery}%</li>` : ''}
-          ${location.additionalData.temperature ? `<li>Temperature: ${location.additionalData.temperature}°C</li>` : ''}
-          <!-- Add more fields as needed -->
-        </ul>
       ` : ''}
     `;
     }
