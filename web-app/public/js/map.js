@@ -1,12 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Connect to WebSocket
     const ws = new WebSocket(wsUrl);
-
+    const center = [-1.2921, 36.8219]
     // Initialize map
-    const map = L.map('map').setView([20, 0], 2);
+    const map = L.map('map').setView(center, 5);
 
     // Tile layer (using OpenStreetMap by default)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    // center marker
+    // Create new marker
+    const mark = L.marker(center, {
+        title: "Center",
+        icon: L.divIcon({ className: 'center-marker' })
+    }).addTo(map).bindPopup()
+
 
     // Store device markers
     const deviceMarkers = {};
@@ -42,26 +50,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const warningZones = [
         {
-            name: "Critical Zone",
+            name: "Safe Zone",
             center: [-1.2921, 36.8219], // Nairobi coordinates
             radius: 5000, // 5km in meters
-            color: '#ff0000',
+            color: '#4CAF50',
             fillOpacity: 0.2,
             weight: 2
         },
         {
-            name: "High Alert Zone",
+            name: "Warning Zone",
             center: [-1.2921, 36.8219],
             radius: 15000, // 15km
-            color: '#ff6600',
+            color: '#FFC107',
             fillOpacity: 0.15,
             weight: 2
         },
         {
-            name: "Watch Zone",
+            name: "Critical Zone",
             center: [-1.2921, 36.8219],
-            radius: 40000, // 40km
-            color: '#ffcc00',
+            radius: 20000, // 20km
+            color: '#ff0000',
             fillOpacity: 0.1,
             weight: 2
         }
@@ -79,6 +87,20 @@ document.addEventListener('DOMContentLoaded', () => {
             .bindPopup(`<b>${zone.name}</b><br>Radius: ${zone.radius/1000}km`)
             .addTo(map);
     });
+
+    // 3. Add a legend (optional but recommended)
+    const legend = L.control({position: 'bottomright'});
+    legend.onAdd = function(map) {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = `
+        <h4>Warning Zones</h4>
+        <div><span style="background: #ff0000; "></span> Critical (>20km)</div>
+        <div><span style="background: #ff6600; opacity: 0.15"></span> High Alert (15km)</div>
+        <div><span style="background: #5ced73; opacity: 0.1"></span> Watch (<5km) </div>
+    `;
+        return div;
+    };
+    legend.addTo(map);
 
     // Plot initial locations
     if (initialLocations && initialLocations.length > 0) {
@@ -98,6 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const group = new L.featureGroup(markers);
             map.fitBounds(group.getBounds());
         }
+
     }
 
     // WebSocket handlers
@@ -151,11 +174,24 @@ document.addEventListener('DOMContentLoaded', () => {
             deviceMarkers[device_id].setLatLng([latitude, longitude]);
             deviceMarkers[device_id].setPopupContent(generatePopupContent(location));
         } else {
-            console.log("creating new marker")
-            // Create new marker
+
+            // GEO-FENCING - label according to proximity to center
+            let d = distFromCenter(latitude,longitude, center[0], center[1])
+            console.log(d)
+            let zone = 'critical'
+            if(d <= 5) {
+                // Create new marker
+                zone = "safe"
+            } else if(d <= 15){
+                zone = "warning"
+            } else {
+                console.log("Ths is criticl")
+                zone = "critical"
+            }
+
             deviceMarkers[device_id] = L.marker([latitude, longitude], {
                 title: device_id,
-                icon: L.divIcon({ className: 'device-marker' })
+                icon: L.divIcon({ className: 'device-marker-'+zone })
             }).addTo(map);
 
             // Add popup
@@ -172,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Generate popup content
     function generatePopupContent(location) {
         return `
-      <b>Device:</b> ${location.deviceId}<br>
+      <b>Device:</b> ${location.device_id}<br>
       <b>Location:</b> ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}<br>
       <b>Last update:</b> ${new Date(location.timestamp).toLocaleString()}<br>
       ${location.additionalData ? `
@@ -204,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 const center =  [-1.2921, 36.8219];
 
-function isWithinRadius(lat, lng, centerLat, centerLng, maxKm) {
+function distFromCenter(lat, lng, centerLat, centerLng) {
     const R = 6371; // Earth's radius in km
     const dLat = (lat - centerLat) * Math.PI / 180;
     const dLng = (lng - centerLng) * Math.PI / 180;
@@ -214,7 +250,7 @@ function isWithinRadius(lat, lng, centerLat, centerLng, maxKm) {
         Math.cos(lat * Math.PI / 180) *
         Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c <= maxKm;
+    return R * c
 }
 
 // Geofencing zones
@@ -225,10 +261,10 @@ function createGeofencingZones(locations) {
         danger: { color: 'red', radius: 20 } // in KM
     };
 
-    locations.forEach(location => {
-        L.circle([location.latitude, location.longitude], {
-            color: zones[location.status].color,
-            radius: zones[location.status].radius
-        }).addTo(map);
-    });
+    // locations.forEach(location => {
+    //     L.circle([location.latitude, location.longitude], {
+    //         color: zones[location.status].color,
+    //         radius: zones[location.status].radius
+    //     }).addTo(map);
+    // });
 }
