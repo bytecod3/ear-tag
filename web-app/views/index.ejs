@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
+
+
 <head>
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
@@ -7,14 +9,15 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
-    <!-- Custom Map JS -->
+    <link rel="stylesheet" href="/css/navbar.css">
 
     <%- include('partials/head') %>
 </head>
+
 <body>
+    <%- include('partials/navbar') %>
 <div class="container">
     <h1><%= title %></h1>
-
     <div class="map-container">
         <div id="map"></div>
         <div id="info-panel">
@@ -31,16 +34,14 @@
     </div>
 </div>
 
+
 <script>
     // Pass initial data from server to client
     const initialLocations = <%- initialLocations %>;
     const wsUrl = window.location.origin.replace(/^http/, 'ws');
-
-
 </script>
 
 <script src="/js/map.js"></script>
-
 
 </body>
 </html>

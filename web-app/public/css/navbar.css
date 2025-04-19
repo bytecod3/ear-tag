@@ -1,0 +1,77 @@
+/* Matte black navigation bar - Full width & Fixed */
+.navbar {
+    background-color: #1a1a1a; /* Matte black */
+    padding: 1rem 0; /* Reduced side padding since container will handle it */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    position: fixed; /* Makes navbar stick */
+    top: 0;
+    left: 0;
+    z-index: 1000; /* Ensures navbar stays above other content */
+}
+
+.navbar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem; /* Added padding to container instead of navbar */
+}
+
+.navbar-logo {
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: all 0.3s ease-in-out;
+}
+
+.navbar-logo:hover {
+    color: #ff7b25; /* Orange color on hover */
+}
+
+.navbar-menu {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 2rem;
+}
+
+.navbar-link {
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: 500;
+    position: relative;
+    padding: 0.5rem 0;
+    transition: all 0.3s ease-in-out;
+}
+
+/* Hover effect */
+.navbar-link:hover {
+    color: #ff7b25; /* Orange color */
+}
+
+/* Underline animation */
+.navbar-link::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #ff7b25;
+    transition: width 0.3s ease-in-out;
+}
+
+.navbar-link:hover::after {
+    width: 100%;
+}
+
+/* Add padding to body to account for fixed navbar */
+body {
+    padding-top: 70px; /* Adjust based on your navbar height */
+}
