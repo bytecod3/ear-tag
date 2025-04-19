@@ -48,22 +48,22 @@ const locationSchema = new mongoose.Schema({
   timestamp: {type: Date, default: Date.now}
 })
 
-const Location = mongoose.model('Location', locationSchema);
+//const Location = mongoose.model('Location', locationSchema);
 
 // create model
-const locationData = mongoose.model('locationData', locationSchema);
+const LocationData = mongoose.model('locationData', locationSchema);
 
 // create a websockets server
 const wss = new WebSocket.Server({server});
 
 // wwatch for location change
-const locationChangeStream = Location.watch();
+const locationChangeStream = LocationData.watch();
 
 wss.on('connection', (ws) => {
     console.log('New Client connected');
 
     // send initial location
-    Location.find().sort({timestamp:-1}).limit(10)
+    LocationData.find().sort({timestamp:-1}).limit(10)
         .then(locations => {
             ws.send(JSON.stringify({
                 type: 'initial',
@@ -74,7 +74,7 @@ wss.on('connection', (ws) => {
     // listen for change and broadcast to all clients
     locationChangeStream.on('change', (change) => {
         if (change.operationType === 'insert') {
-            Location.findById(change.documentKey._id)
+            LocationData.findById(change.documentKey._id)
                 .then(newLocation => {
                     wss.clients.forEach(client => {
                         if (client.readyState === WebSocket.OPEN) {
@@ -94,17 +94,32 @@ wss.on('connection', (ws) => {
 })
 // API endpoint to get latest locations (for web interface)
 app.get('/', async (req, res) => {
+    // try {
+    //     const locations = await Location.find().sort({ timestamp: -1 }).limit(10);
+    //     //res.json(locations);
+    //     res.render('index', {
+    //         title: "Animal Ear Tag Tracker",
+    //         initialLocations: JSON.stringify(locations),
+    //         mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN || ''
+    //     })
+    // } catch (err) {
+    //     console.error(err);
+    //     res.status(500).send('Server Error');
+    // }
+
+
     try {
-        const locations = await Location.find().sort({ timestamp: -1 }).limit(10);
-        //res.json(locations);
-        res.render('index', {
-            title: "Animal Ear Tag Tracker",
-            initialLocations: JSON.stringify(locations),
-            mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN || ''
-        })
+
+        const locations = await LocationData.find().sort({ timestamp: -1 }).limit(10);
+
+        console.log('Fetched locations:', locations.length);
+        console.log(JSON.stringify(locations, null, 2));  // Pretty-print for logging
+
+        res.json(locations)
+
+
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Server Error');
+        res.status(500).json({message: err.message})
     }
 });
 
@@ -130,10 +145,13 @@ app.post('/api/location', async (req,res) => {
 
 // API Endpoint for Locations
 app.get('/api/locations', async (req, res) => {
+
     try {
-        const locations = await Location.find().sort({ timestamp: -1 });
-        res.json(locations);
+
+        //const locations = await Location.find().sort({ timestamp: -1 });
+        //res.json(locations);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
