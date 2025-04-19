@@ -94,32 +94,17 @@ wss.on('connection', (ws) => {
 })
 // API endpoint to get latest locations (for web interface)
 app.get('/', async (req, res) => {
-    // try {
-    //     const locations = await Location.find().sort({ timestamp: -1 }).limit(10);
-    //     //res.json(locations);
-    //     res.render('index', {
-    //         title: "Animal Ear Tag Tracker",
-    //         initialLocations: JSON.stringify(locations),
-    //         mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN || ''
-    //     })
-    // } catch (err) {
-    //     console.error(err);
-    //     res.status(500).send('Server Error');
-    // }
-
-
     try {
-
         const locations = await LocationData.find().sort({ timestamp: -1 }).limit(10);
-
-        console.log('Fetched locations:', locations.length);
-        console.log(JSON.stringify(locations, null, 2));  // Pretty-print for logging
-
-        res.json(locations)
-
-
+        //res.json(locations);
+        res.render('index', {
+            title: "Animal Ear Tag",
+            initialLocations: JSON.stringify(locations),
+            mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN || ''
+        })
     } catch (err) {
-        res.status(500).json({message: err.message})
+        console.error(err);
+        res.status(500).send('Server Error');
     }
 });
 
@@ -147,9 +132,8 @@ app.post('/api/location', async (req,res) => {
 app.get('/api/locations', async (req, res) => {
 
     try {
-
-        //const locations = await Location.find().sort({ timestamp: -1 });
-        //res.json(locations);
+        const locations = await Location.find().sort({ timestamp: -1 });
+        res.json(locations);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
