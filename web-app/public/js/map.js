@@ -114,13 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Plot initial locations
     if (initialLocations && initialLocations.length > 0) {
-        // initialLocations.forEach(location => {
-        //     updateOrCreateMarker(location);
-        // });
-
-        dummyDevices.forEach(location => {
+        initialLocations.forEach(location => {
             updateOrCreateMarker(location);
         });
+
+        // to simulate turn this on
+        // dummyDevices.forEach(location => {
+        //     updateOrCreateMarker(location);
+        // });
 
         createGeofencingZones(dummyDevices);
 

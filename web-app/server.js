@@ -42,13 +42,12 @@ TODO: move this to models
 */
 // location schema 
 const locationSchema = new mongoose.Schema({
-  device_id: String,
-  latitude: Number,
-  longitude: Number,
-  timestamp: {type: Date, default: Date.now}
+    device_id: String,
+    latitude: Number,
+    longitude: Number,
+    acc_mag: Number,
+    timestamp: {type: Date, default: Date.now}
 })
-
-//const Location = mongoose.model('Location', locationSchema);
 
 // create model
 const LocationData = mongoose.model('locationData', locationSchema);
@@ -56,7 +55,7 @@ const LocationData = mongoose.model('locationData', locationSchema);
 // create a websockets server
 const wss = new WebSocket.Server({server});
 
-// wwatch for location change
+// watch for location change
 const locationChangeStream = LocationData.watch();
 
 wss.on('connection', (ws) => {
@@ -74,6 +73,7 @@ wss.on('connection', (ws) => {
     // listen for change and broadcast to all clients
     locationChangeStream.on('change', (change) => {
         if (change.operationType === 'insert') {
+            console.log("New item logged")
             LocationData.findById(change.documentKey._id)
                 .then(newLocation => {
                     wss.clients.forEach(client => {
@@ -98,10 +98,11 @@ app.get('/', async (req, res) => {
         const locations = await LocationData.find().sort({ timestamp: -1 }).limit(10);
         //res.json(locations);
         res.render('index', {
-            title: "Animal Ear Tag",
+            title: "WildPing",
             initialLocations: JSON.stringify(locations),
             mapboxAccessToken: process.env.MAPBOX_ACCESS_TOKEN || ''
         })
+
     } catch (err) {
         console.error(err);
         res.status(500).send('Server Error');
@@ -112,12 +113,13 @@ app.get('/', async (req, res) => {
 
 app.post('/api/location', async (req,res) => {
   try {
-    const {device_id, latitude, longitude} = req.body;
+    const {device_id, latitude, longitude, acc_mag} = req.body;
 
-    const new_location = new locationData({
+    const new_location = new LocationData({
         device_id,
         latitude,
-        longitude
+        longitude,
+        acc_mag
     })
 
     const savedLocation = await new_location.save();

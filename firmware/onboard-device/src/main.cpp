@@ -60,7 +60,7 @@ unsigned long GPS_current_millis = 0;
 unsigned long GPS_last_millis = 0;
 unsigned long GPS_sample_interval = 5000; // TODO: set longer frequency
 float base_lat = -1.50;
-float base_long = 15.22;
+float base_long = 37.0144;
 
 GPS_PACKET gps_packet;
 
@@ -108,7 +108,7 @@ int current_state;
 int button_state = HIGH;
 int last_button_state = HIGH;
 unsigned long last_debounce_time = 0;
-const unsigned long debounce_delay = 50;
+const unsigned long debounce_delay = 30;
 int press_count = 0;
 
 const char* ssid = "Eduh";
@@ -191,6 +191,7 @@ const char* server_url = "http://192.168.46.1:3000/api/location";
      doc["device_id"] = tag_id;
      doc["latitude"] = lat;
      doc["longitude"] = lng;
+     doc["acc_mag"] = acc_mag_filtered;
 
      String payload;
      serializeJson(doc, payload);
@@ -340,6 +341,7 @@ void setup() {
 } 
 
 void loop() {
+	
   // get current time
   now = millis();
 
@@ -352,18 +354,20 @@ void loop() {
   if((now - last_debounce_time) > debounce_delay) {
     if(reading != button_state) {
       button_state = reading;
-
       if(button_state == LOW) {
         press_count++;
-        debugln("pressed");
+        debugln("change state");
       }
     }
   }
-  last_button_state = reading;
-
+  
+  last_button_state = reading; 
+  
   if(press_count == 2) {
     press_count = 0;
   }
+  
+  debug("Press count: "); debugln(press_count);
 
   /* change state */
   if(press_count == 0) {
@@ -371,13 +375,6 @@ void loop() {
   } else if(press_count == 1) {
     current_state = DEVICE_STATES::OPERATIONAL;
   }
-
-  // convert states to string for debug
-//  if(current_state == 1) {
-//    debugln("OPERATIONAL ");
-//  } else if(current_state == 2) {
-//    debugln("SIMULATION ");
-//  }
 
   // blink for status indication
   if((now - led1_previous) >= led1_interval) {
@@ -417,37 +414,29 @@ void loop() {
   /**
    * END OF ACTIVITY MONITOR
    */
+  // read GPS data
+   /**
+   * GPS DATA COLLECTION
+   * Data is read at a frequency defined by the DATA_UPDATE frequency value
+     */
+    GPS_current_millis = millis();
+    if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
+      GPS_get_coordinates();
+      GPS_last_millis = GPS_current_millis;
+    }
+  
+  
+  if(current_state == DEVICE_STATES::OPERATIONAL) {
+    led2_interval = 1000;
+    if((now - led1_previous) >= 1000) {
+      led1_previous=now;
+      led1_state = !led1_state;
+      digitalWrite(LED2, led1_state);
+    }
 
-  // read GPS data only in OPERATIONAL mode
-//  if(current_state == DEVICE_STATES::OPERATIONAL) {
-//
-//    led2_interval = 1000;
-//    /**
-//   * GPS DATA COLLECTION
-//   * Data is read at a frequency defined by the DATA_UPDATE frequency value
-//     */
-//    GPS_current_millis = millis();
-//    if((GPS_current_millis - GPS_last_millis) >= GPS_sample_interval) {
-//      GPS_get_coordinates();
-//      GPS_last_millis = GPS_current_millis;
-//    }
-//
-//    // LED1 blink
-//    if((now - led1_previous) >= 1000) {
-//      led1_previous=now;
-//      led1_state = !led1_state;
-//      digitalWrite(LED2, led1_state);
-//    }
-//
-//  } else if(current_state == DEVICE_STATES::SIMULATION) {
-//    led2_interval = 250;
-//
-//    if(now - last_http_time > http_send_interval) {
-//      last_http_time = current_http_time;
-//      send_packet_to_server(15.55, 23.89);
-//    }
-//
-//  }
+  } else if(current_state == DEVICE_STATES::SIMULATION) {
+    led2_interval = 250;
+  }
 
   // LED 2 BLINK
   if((now - led2_previous) >= led2_interval) {
@@ -460,12 +449,20 @@ void loop() {
   unsigned long current_http_time = millis();
   if((current_http_time - last_http_time) >= http_send_interval) {
     last_http_time = current_http_time;
+    
+    if(current_state == DEVICE_STATES::SIMULATION) {
+		debugln("SIMULATION");
+		// generate random location data
+		float lat_offset = (random(0,2001) - 1000) / 10000.0;
+		float lng_offset = (random(0,2001) - 1000) / 10000.0;
+		send_packet_to_server(base_lat + lat_offset, base_long + lng_offset);
+	} else if (current_state == DEVICE_STATES::OPERATIONAL) {
+		debugln("OPERATIONAL");
+		debug("Op coords:");debug(gps_packet.latitude); debug(","); debugln(gps_packet.longitude);
+		send_packet_to_server(gps_packet.latitude, gps_packet.longitude);
+		
+	}
 
-    // generate random location data
-    float lat_offset = (random(0,2001) - 1000) / 10000.0;
-    float lng_offset = (random(0,2001) - 1000) / 10000.0;
-
-    send_packet_to_server(  base_lat + lat_offset, base_long + lng_offset);
   }
 
   /**
