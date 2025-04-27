@@ -117,7 +117,7 @@ const char* password = "password2";
 //const char* ssid = "Gakibia unit 3";
 //const char* password = "password";
 
-const char* server_url = "http://192.168.46.1:3000/api/location";
+const char* server_url = "https://makepcb.tech/wildping/api/location";
 
 /**
  * function prototypes
@@ -327,8 +327,8 @@ void transmit_to_base_station(char* data) {
 void setup() {
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
     Serial.begin(SERIAL_BAUDRATE);
-    //WIFI_provisioning();
-    WIFI_basic_connection();
+    WIFI_provisioning();
+    //WIFI_basic_connection();
     imu.init();
     initLORA();
     GPS_init();
