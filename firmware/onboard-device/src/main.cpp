@@ -75,7 +75,7 @@ const float simulatedCoordinates[][2] = {
 };
 
 /**
- * These represent the radiuses we need to check every minute the animal
+ * These represent the radii we need to check every minute the animal
  * is grazing
  *
  * distance in KM
@@ -329,12 +329,15 @@ void setup() {
     Serial.begin(SERIAL_BAUDRATE);
     WIFI_provisioning();
     //WIFI_basic_connection();
-    imu.init();
-    initLORA();
-    GPS_init();
+    // imu.init();
+    //initLORA();
+    //GPS_init();
     pinMode(LED1, OUTPUT);
     pinMode(LED2, OUTPUT);
     pinMode(SIMULATE_BUTTON, INPUT);
+
+    // set LED 1 LOW permanently
+    digitalWrite(LED1, HIGH);
 
     // for random number generation
     randomSeed(367);
@@ -377,38 +380,41 @@ void loop() {
   }
 
   // blink for status indication
-  if((now - led1_previous) >= led1_interval) {
-      led1_previous=now;
-      led1_state = !led1_state;
-      digitalWrite(LED1, led1_state);
-  }
+//  if((now - led1_previous) >= led1_interval) {
+//      led1_previous=now;
+//      led1_state = !led1_state;
+//      digitalWrite(LED1, led1_state);
+//  }
+
+  // turn on LED2 on OPERATION Mode
+
 
   /**
    * ACTIVITY MONITOR
    */
   // read raw acceleration values
-  float ax = imu.readXAcceleration();
-  float ay = imu.readYAcceleration();
-  float az = imu.readZAcceleration();
+  // float ax = imu.readXAcceleration();
+  // float ay = imu.readYAcceleration();
+  // float az = imu.readZAcceleration();
 
-  // filter acceleration values
-  float ax_filtered = imu.movingAverageFilter(ax);
-  //Serial.print(ax); Serial.print(",");Serial.println(ax_filtered);
+  // // filter acceleration values
+  // float ax_filtered = imu.movingAverageFilter(ax);
+  // //Serial.print(ax); Serial.print(",");Serial.println(ax_filtered);
 
-  // get sample time for the IMU data at 100HZ sample rate
-  if((now-lastSampleMillis) >= sample_interval) {
-      lastSampleMillis = now;
+  // // get sample time for the IMU data at 100HZ sample rate
+  // if((now - lastSampleMillis) >= sample_interval) {
+  //     lastSampleMillis = now;
 
-      // filtered angles
-      f_pitch = imu.filterPitch(sample_interval);
-      f_roll = imu.filterRoll(sample_interval);
-      sprintf(angles_buffer, "%.2f,%.2f,%.2f,%.2f\n", pitch, f_pitch, roll, f_roll);
-      // dtostrf(f_pitch, 4, 2, f_p_str);
-  }
+  //     // filtered angles
+  //     f_pitch = imu.filterPitch(sample_interval);
+  //     f_roll = imu.filterRoll(sample_interval);
+  //     sprintf(angles_buffer, "%.2f,%.2f,%.2f,%.2f\n", pitch, f_pitch, roll, f_roll);
+  //     // dtostrf(f_pitch, 4, 2, f_p_str);
+  // }
 
-  // compute magnitude of acceleration
-  acc_mag_raw = imu.computeRawAccelerationMagnitude();
-  acc_mag_filtered =  imu.computeAccelerationMagnitude();
+  // // compute magnitude of acceleration
+  // acc_mag_raw = imu.computeRawAccelerationMagnitude();
+  // acc_mag_filtered =  imu.computeAccelerationMagnitude();
   //Serial.print(acc_mag_raw); Serial.print(","); Serial.println(acc_mag_filtered);
 
   /**
@@ -424,45 +430,47 @@ void loop() {
       GPS_get_coordinates();
       GPS_last_millis = GPS_current_millis;
     }
-  
-  
-  if(current_state == DEVICE_STATES::OPERATIONAL) {
-    led2_interval = 1000;
-    if((now - led1_previous) >= 1000) {
-      led1_previous=now;
-      led1_state = !led1_state;
-      digitalWrite(LED2, led1_state);
-    }
 
+  if(current_state == DEVICE_STATES::OPERATIONAL) {
+    // led2_interval = 1000;
+    digitalWrite(LED2, HIGH);
   } else if(current_state == DEVICE_STATES::SIMULATION) {
-    led2_interval = 250;
+    // led2_interval = 250;
+    digitalWrite(LED2, LOW);
   }
 
   // LED 2 BLINK
-  if((now - led2_previous) >= led2_interval) {
-    led2_previous=now;
-    led2_state = !led2_state;
-    digitalWrite(LED2, led2_state);
-  }
+//  if((now - led2_previous) >= led2_interval) {
+//    led2_previous = now;
+//    led2_state = !led2_state;
+//    digitalWrite(LED2, led2_state);
+//  }
 
   // send data to server
   unsigned long current_http_time = millis();
   if((current_http_time - last_http_time) >= http_send_interval) {
     last_http_time = current_http_time;
     
-    if(current_state == DEVICE_STATES::SIMULATION) {
-		debugln("SIMULATION");
-		// generate random location data
-		float lat_offset = (random(0,2001) - 1000) / 10000.0;
-		float lng_offset = (random(0,2001) - 1000) / 10000.0;
-		send_packet_to_server(base_lat + lat_offset, base_long + lng_offset);
-	} else if (current_state == DEVICE_STATES::OPERATIONAL) {
-		debugln("OPERATIONAL");
-		debug("Op coords:");debug(gps_packet.latitude); debug(","); debugln(gps_packet.longitude);
-		send_packet_to_server(gps_packet.latitude, gps_packet.longitude);
-		
-	}
+    // if(current_state == DEVICE_STATES::SIMULATION) {
+    //           debugln("SIMULATION");
+    //           // generate random location data
+    //           float lat_offset = (random(0,2001) - 1000) / 10000.0;
+    //           float lng_offset = (random(0,2001) - 1000) / 10000.0;
+    //           send_packet_to_server(base_lat + lat_offset, base_long + lng_offset);
+    //   } else if (current_state == DEVICE_STATES::OPERATIONAL) {
+    //           debugln("OPERATIONAL");
+    //           debug("Op coords:");debug(gps_packet.latitude); debug(","); debugln(gps_packet.longitude);
+    //           send_packet_to_server(gps_packet.latitude, gps_packet.longitude);
 
+    //   }
+
+    // simulate 
+    acc_mag_filtered =  2.2;
+    float lat_offset = (random(0,2001) - 1000) / 10000.0;
+    float lng_offset = (random(0,2001) - 1000) / 10000.0;
+    
+    send_packet_to_server(base_lat + lat_offset, base_long + lng_offset);
+  
   }
 
   /**
@@ -482,26 +490,26 @@ void loop() {
   * acceleration y
   * acceleration z,
   * acceleration_magnitude
-  *
+   *
   */
-  sprintf(data_packet,
-          "%s,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%d,%.2f,%.2f,%.2f,%.2f",
-          tag_id,
-          gps_packet.day,
-          gps_packet.month,
-          gps_packet.year,
-          gps_packet.hr,
-          gps_packet.minute,
-          gps_packet.sec,
-          gps_packet.latitude,
-          gps_packet.longitude,
-          geo_fence_proximity,
-          ax,
-          ay,
-          az,
-          acc_mag_filtered
-          );
+  // sprintf(data_packet,
+  //         "%s,%d,%d,%d,%d,%d,%d,%.4f,%.4f,%d,%.2f,%.2f,%.2f,%.2f",
+  //         tag_id,
+  //         gps_packet.day,
+  //         gps_packet.month,
+  //         gps_packet.year,
+  //         gps_packet.hr,
+  //         gps_packet.minute,
+  //         gps_packet.sec,
+  //         gps_packet.latitude,
+  //         gps_packet.longitude,
+  //         geo_fence_proximity,
+  //         ax,
+  //         ay,
+  //         az,
+  //         acc_mag_filtered
+  //         );
 
-  transmit_to_base_station(data_packet);
+  // transmit_to_base_station(data_packet);
 
 }
